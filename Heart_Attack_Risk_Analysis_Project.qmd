@@ -1,0 +1,751 @@
+---
+title: "Kalp Krizi Risk Analizi"
+author: 
+  - Mehdi Koşaca
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+date: "2024-12-28"
+---
+
+# Kalp Krizi Risk Analizi
+
+```{r}
+suppressMessages(library(readxl))
+
+data <- read.csv("C:/data_set/heart.csv")
+head(data)
+
+str(data)
+```
+
+### Kalp Krizi Analizi ve Tahmini Veri Seti
+
+Bu veri seti, bireylerin kalp sağlığına dair bilgileri içermektedir. Amaç, sağlanan bilgiler doğrultusunda bir kişinin kalp krizi riski taşıyıp taşımadığını tahmin etmektir.
+
+Veri seti 14 değişken ve 303 örnek içermektedir. Değişkenler şunlardır:
+
+-   **age - Yaş**\
+    Açıklama: Hastanın yaşı.\
+    Tür: Sayısal
+
+-   **sex - Cinsiyet**\
+    Açıklama: Hastanın biyolojik cinsiyeti.\
+    Değerler:\
+    0: Kadın\
+    1: Erkek\
+    Tür: Nominal
+
+-   **cp - Göğüs Ağrısı**\
+    Açıklama: Bireyin yaşadığı göğüs ağrısının türünü tanımlar.\
+    Değerler:\
+    0: Tipik Angina\
+    1: Atipik Angina\
+    2: Non-Anginal Ağrı\
+    3: Asimptomatik\
+    Tür: Nominal
+
+-   **trtbps - Dinlenme Kan Basıncı**\
+    Açıklama: Hastanın dinlenme esnasındaki kan basıncı.\
+    Değerler: mm Hg (milimetre cıva) cinsinden ölçülür.\
+    Tür: Sayısal
+
+-   **chol - Serum Kolesterol**\
+    Açıklama: Hastanın serum kolesterol seviyeleri. Serum kolesterol, kan dolaşımındaki kolesterol miktarını ifade eder.\
+    Değerler: mg/dl (miligram/desilitre) cinsinden ölçülür.\
+    Tür: Sayısal
+
+-   **fbs - Açlık Kan Şekeri**\
+    Açıklama: Hastanın açlık kan şekeri seviyeleri. Açlık kan şekeri, 8 saatlik bir açlık sonrası kan şekerini ölçen bir parametredir.\
+    Değerler:\
+    0: Açlık Kan Şekeri \<= 120 mg/dl\
+    1: Açlık Kan Şekeri \> 120 mg/dl\
+    Tür: Sıralı
+
+-   **restecg - Dinlenme Elektrokardiyografik Sonuçlar**\
+    Açıklama: Hastanın dinlenme esnasındaki elektrokardiyografik sonuçları, kalbin elektriksel aktivitesini gösterir.\
+    Değerler:\
+    0: Normal\
+    1: ST-T Dalga Anormalliği (T Dalga inversiyonları ve/veya ST segmentinde \> 0.05 mV'lik yükselme veya düşüş)\
+    2: Estes kriterlerine göre muhtemel veya kesin sol ventriküler hipertrofi\
+    Tür: Nominal
+
+-   **thalachh - Elde Edilen Maksimum Kalp Hızı**\
+    Açıklama: Hastanın elde ettiği maksimum kalp hızı. Maksimum kalp hızı, maksimum egzersiz testi sırasında elde edilen en yüksek kalp hızıdır.\
+    Değerler: bpm (dakikadaki atım sayısı) cinsinden ölçülür.\
+    Tür: Sayısal
+
+-   **exng - Egzersizle İndüklenen Angina**\
+    Açıklama: Hastanın egzersiz sırasında angina yaşayıp yaşamadığını gösterir. Angina, kalp kasına yeterli oksijenli kan gitmemesi nedeniyle göğüs ağrısı veya rahatsızlık hissidir.\
+    Değerler:\
+    0: Hayır\
+    1: Evet\
+    Tür: Nominal
+
+-   **oldpeak - ST Depresyonu**\
+    Açıklama: Egzersiz sırasında dinlenmeye göre ST depresyonu. ST depresyonu, elektrokardiyogramdaki ST segmentinin normalden düşük olması durumudur.\
+    Değerler: mm (milimetre) cinsinden ölçülür.\
+    Tür: Sayısal
+
+-   **slp - Peak Egzersiz ST Segmentinin Eğim**\
+    Açıklama: Peak egzersiz ST segmentinin eğimi.\
+    Değerler:\
+    0: Yükselen\
+    1: Düz\
+    2: Düşen\
+    Tür: Sıralı
+
+-   **caa - Ana Damar Sayısı**\
+    Açıklama: Fluoroskopi ile boyanmış ana damar sayısı. Fluoroskopi, iç organları hareketli şekilde gösteren bir görüntüleme tekniğidir.\
+    Değerler: 0 ile 3 arasında değişir.\
+    Tür: Sıralı
+
+-   **thall - Talyum Stres Testi Sonucu**\
+    Açıklama: Talyum stres testinin sonucu. Talyum stres testi, kalbe kan akışının nasıl olduğunu gösteren nükleer bir görüntüleme yöntemidir.\
+    Değerler:\
+    1: Normal\
+    2: Sabit Defekt\
+    3: Geri Dönüşümlü Defekt\
+    Tür: Nominal
+
+-   **output - Kalp Krizi Riski**\
+    Açıklama: Hastanın kalp krizi geçirme riski.\
+    Değerler:\
+    0: Düşük Risk\
+    1: Yüksek Risk\
+    Tür: Nominal, Bağımlı Değişken
+
+# Eksik Gözlem
+
+```{r}
+sum(is.na(data))
+
+eksik_degerler <- colSums(is.na(data))
+eksik_deger_yuzdeleri <- colMeans(is.na(data)) * 100
+print(eksik_degerler)
+print(eksik_deger_yuzdeleri)
+```
+
+```{r}
+suppressMessages(library(naniar))
+suppressMessages(library(ggplot2))
+
+
+gg_miss_var(data) + 
+  labs(title = "Eksik Deger Sayıları",
+       x = "Degişkenler",
+       y = "Eksik Deger Sayısı") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+-   Bu eksik değer grafiği, veri setinin eksik değerler açısından oldukça temiz olduğunu göstermektedir. Veri setindeki hiçbir değişkende eksik veri bulunmaması, analizler için olumlu bir durumdur.
+
+# Aykırı değer
+
+```{r}
+# Sayısal değişkenler için özet istatistikler
+summary(data[, c("age", "trtbps", "chol", "thalachh", "oldpeak")])
+```
+
+```{r}
+# Histogramlar
+par(mfrow=c(2,3))  # 2 satır, 3 sütunluk bir düzen
+
+hist(data$age, main="Yaş Dağılımı", xlab="Yaş", col="lightblue")
+hist(data$trtbps, main="Sistolik Kan Basıncı Dağılımı", xlab="Sistolik Kan Basıncı", col="lightgreen")
+hist(data$chol, main="Kolesterol Dağılımı", xlab="Kolesterol", col="lightcoral")
+hist(data$thalachh, main="Maksimum Kalp Hızı Dağılımı", xlab="Maksimum Kalp Hızı", col="lightyellow")
+hist(data$oldpeak, main="ST Depresyonu Dağılımı", xlab="ST Depresyonu", col="lightpink")
+```
+
+-   **Normal Dağılıma Yakın:** Yaş ve maksimum kalp hızı dağılımları, normal dağılıma yakın veya simetrik dağılımlar gösteriyor.
+
+-   **Sağa Çarpık:** Sistolik kan basıncı, kolesterol ve ST depresyonu dağılımları ise sağa çarpık bir dağılım sergiliyor.
+
+```{r}
+suppressMessages(library(ggplot2))
+suppressMessages(library(gridExtra))
+
+# Grafiklerin oluşturulması
+exng_graph <- ggplot(data, aes(x = exng)) + 
+  geom_bar(fill = "#FF6347") + 
+  ggtitle("Egzersizle induklenen anjina (exng)") + 
+  xlab("Exercise Induced Angina") + 
+  ylab("Count")
+
+cp_graph <- ggplot(data, aes(x = cp)) + 
+  geom_bar(fill = "#4682B4") + 
+  ggtitle("Gogus agrısı tipi (cp) ") + 
+  xlab("Chest Pain Type") + 
+  ylab("Count")
+
+restecg_graph <- ggplot(data, aes(x = restecg)) + 
+  geom_bar(fill = "#8A2BE2") + 
+  ggtitle("Dinlenme elektrokardiyografisi (restecg)") + 
+  xlab("Resting Electrocardiographic Results") + 
+  ylab("Count")
+
+# Grafiklerin tek bir sayfada gösterilmesi
+grid.arrange(exng_graph, cp_graph, restecg_graph, ncol = 2, nrow = 2)
+
+```
+
+```{r}
+
+
+# Grafiklerin oluşturulması
+
+slp_graph <- ggplot(data, aes(x = slp)) + 
+  geom_bar(fill = "#4682B4") + 
+  ggtitle(" Egzersiz sırasında ST (slp)") + 
+  xlab("Slope") + 
+  ylab("Count")
+
+caa_graph <- ggplot(data, aes(x = caa)) + 
+  geom_bar(fill = "#32CD32") + 
+  ggtitle(" Ana damarların sayısı  (caa)") + 
+  xlab("Number of Major Vessels") + 
+  ylab("Count")
+
+thall_graph <- ggplot(data, aes(x = thall)) + 
+  geom_bar(fill = "#8A2BE2") + 
+  ggtitle("Talasemi (thall) ") + 
+  xlab("Thallium Stress Test Result") + 
+  ylab("Count")
+
+# Grafiklerin tek bir sayfada gösterilmesi
+grid.arrange( slp_graph, caa_graph, thall_graph, ncol = 2, nrow = 2)
+
+```
+
+-   **Egzersiz Sırasında ST (slp):** Veri setindeki katılımcıların çoğunluğunun ST segment eğimi 1 veya 2 değerinde. 0 değeri ise daha az gözlemlenmiş.
+
+-   **Ana Damarların Sayısı (caa):** Katılımcıların büyük çoğunluğu 0 ana damara sahipken, damar sayısı arttıkça gözlem sayısı düşüyor.
+
+-   **Egzersizle İndüklenen Anjina (exng):** Katılımcıların çoğunda egzersizle indüklenen anjina görülmüyor (0 değeri), fakat belirli bir kısmında gözlemlenmiş (1 değeri).
+
+-   **Göğüs Ağrısı Tipi (cp):** Göğüs ağrısı tipinde 0 değeri oldukça baskın, diğer tipler daha az gözlemlenmiş.
+
+-   **Talassemi (thall):** Talassemi testinde, 2 ve 3 değerleri daha sık gözlemlenirken, diğer değerler daha az bulunuyor.
+
+-   **Dinlenme Elektrokardiyografisi (restecg):** Dinlenme elektrokardiyografisi sonuçlarında 0 ve 1 değerleri neredeyse aynı sıklıkta ve çok yüksekken, 2 değeri oldukça düşük.
+
+```{r}
+library(ggplot2)
+library(gridExtra)
+
+# output_graph
+output_graph <- ggplot(data, aes(x = "", fill = factor(output))) + 
+  geom_bar(width = 1, stat = "count") +
+  coord_polar(theta = "y") + 
+  ggtitle("Kalp hastalıgı (output)") + 
+  theme_void() + 
+  scale_fill_manual(values = c("#FFD700", "#8B0000")) +
+  geom_text(aes(label = paste0(round(..count.. / sum(..count..) * 100, 2), "%")),
+            stat = "count", position = position_stack(vjust = 0.5))
+
+# fbs_graph
+fbs_graph <- ggplot(data, aes(x = "", fill = factor(fbs))) + 
+  geom_bar(width = 1, stat = "count") +
+  coord_polar(theta = "y") + 
+  ggtitle("Aclık kan sekeri (fbs)") + 
+  theme_void() + 
+  scale_fill_manual(values = c("#32CD32", "#FF4500")) +
+  geom_text(aes(label = paste0(round(..count.. / sum(..count..) * 100, 2), "%")),
+            stat = "count", position = position_stack(vjust = 0.5))
+
+
+sex_graph <- ggplot(data, aes(x = "", fill = factor(sex))) + 
+  geom_bar(width = 1, stat = "count") +
+  coord_polar(theta = "y") + 
+  ggtitle("Cinsiyet (sex)") + 
+  theme_void() + 
+  scale_fill_manual(values = c("#FF6347", "#4682B4")) +
+  geom_text(aes(label = paste0(round(..count.. / sum(..count..) * 100, 2), "%")),
+            stat = "count", position = position_stack(vjust = 0.5))
+
+# 1. Sayfa: output ve fbs
+grid.arrange(output_graph, fbs_graph, ncol = 1, nrow = 2)
+
+# 2. Sayfa
+grid.arrange(sex_graph, ncol = 1, nrow = 1)
+
+
+```
+
+# Dönüşüm
+
+```{r}
+# log dönüşümü
+data$caa_log <- log(data$caa + 0.001)   # ana damar sayısı
+data$chol_log <- log(data$chol + 0.001) # Serum kolesterol seviyesi
+data$cp_log <- log(data$cp + 0.001)     # göğus ağrı tipi
+```
+
+```{r}
+# Histogramlar
+par(mfrow=c(1,2))  # 2 satır, 3 sütunluk bir düzen
+
+hist(data$caa, main="Once", xlab="caa (Buyuk damarların sayısı)", col="lightblue")
+hist(data$caa_log, main="Sonra", xlab="caa (Buyuk damarların sayısı)", col="lightgreen")
+
+hist(data$chol, main="Once", xlab="chol (Serum kolesterol seviyesi) ", col="lightblue")
+hist(data$chol_log, main="Sonra", xlab="Serum kolesterol seviyesi ", col="lightgreen")
+
+hist(data$cp, main="Once", xlab="cp (Gogus agrısı tipi)", col="lightblue")
+hist(data$cp_log, main="Sonra", xlab="Gogus agrısı tipi ", col="lightgreen")
+
+```
+
+Model performansını artırmak amacıyla, 'caa' (büyük damar sayısı), 'chol' (serum kolesterol seviyesi) ve 'cp' (göğüs ağrısı tipi) değişkenlerine dönüşüm uygulanmıştır. Bu dönüşümler, değişkenlerin modele anlamlı katkı sağlamasını desteklemiştir.
+
+# Korelasyon
+
+```{r}
+# Sayısal değişkenler arasındaki korelasyonu hesaplama
+correlation_matrix <- cor(data[, c("age", "trtbps", "chol_log", "thalachh", "oldpeak")])
+
+# Korelasyon matrisini görüntüleme
+print(correlation_matrix)
+
+```
+
+```{r}
+# İstenilen sayısal değişkenler
+df_dis <- data[, c("age", "trtbps", "chol_log", "thalachh", "oldpeak")]
+
+# Korelasyon hesaplama (Spearman yöntemiyle)
+cor_matrix <- cor(df_dis, method = "spearman")
+
+# Korelasyon matrisini görselleştirme
+
+suppressMessages(library(corrplot))
+
+corrplot(cor_matrix, method = "number")
+
+```
+
+1.  thalachh ve oldpeak arasında orta düzeyde negatif bir korelasyon (-0.43) var. Ulaşılan maksimum kalp hızı arttıkça ST depresyonunun azalma eğiliminde olduğunu gösteriyor.
+
+2.  yaş ve maksimüm kalp hızı arasında orta düzeyde negatif bir korelasyon (-0.40) var. Yaş ilerledikçe ulaşılabilen maksimum kalp hızının düşme eğiliminde olduğunu gösteriyor.
+
+    -   Bu ilişkiler anlamlı olsa da, bu değişkenlerin modele dahil edilip edilmemesi modelin başarısını etkilemediği için veri setinde herhangi bir işlem yapılmamıştır.
+
+    ```{r}
+
+    suppressMessages(library(psych))
+    sayisal_degiskenler <- c("age","trtbps","chol","thalachh","oldpeak")
+    pairs.panels(data[, sayisal_degiskenler],
+    main = "Duzlestirilmiş Sacilim Matrisi",
+    ellipses = TRUE)
+    ```
+
+    1.  age vs. trtbps:
+
+        • Gözlem: Yaş (age) ile trigliserid seviyesi (trtbps) arasındaki ilişki.
+
+        • Yorum: Yaş arttıkça trigliserid seviyeleri de genel olarak artma eğilimindedir. Bu, yaşın trigliserid seviyeleri üzerinde pozitif bir etkisi olduğunu gösterir.
+
+    2.  age vs. chol:
+
+        • Gözlem: Yaş (age) ile kolesterol seviyesi (chol) arasındaki ilişki.
+
+        • Yorum: Yaş arttıkça kolesterol seviyeleri de genel olarak artma eğilimindedir. Bu, yaşın kolesterol seviyeleri üzerinde pozitif bir etkisi olduğunu gösterir.
+
+    3.  age vs. thalachh:
+
+        • Gözlem: Yaş (age) ile maksimum kalp atım hızı (thalachh) arasındaki ilişki.
+
+        • Yorum: Yaş arttıkça maksimum kalp atım hızı genel olarak azalma eğilimindedir. Bu, yaşın maksimum kalp atım hızı üzerinde negatif bir etkisi olduğunu gösterir.
+
+    4.  trtbps vs. chol:
+
+        • Gözlem: Trigliserid seviyesi (trtbps) ile kolesterol seviyesi (chol) arasındaki ilişki.
+
+        • Yorum: Trigliserid seviyeleri arttıkça kolesterol seviyeleri de kısmen artma eğilimindedir. Bu, trigliserid ile kolesterol seviyeleri arasında düşük düzeyde bir pozitif ilişki olduğunu gösterir.
+
+    5.  trtbps vs. thalachh:
+
+        • Gözlem: Trigliserid seviyesi (trtbps) ile maksimum kalp atım hızı (thalachh) arasındaki ilişki.
+
+        • Yorum: Trigliserid seviyeleri ile maksimum kalp atım hızı arasında belirgin bir ilişki yoktur. Bu, iki değişken arasında çok düşük bir korelasyon olduğunu gösterir.
+
+    6.  chol vs. thalachh:
+
+        • Gözlem: Kolesterol seviyesi (chol) ile maksimum kalp atım hızı (thalachh) arasındaki ilişki.
+
+        • Yorum: Kolesterol seviyeleri ile maksimum kalp atım hızı arasında belirgin bir ilişki yoktur. Bu, iki değişken arasında çok düşük bir korelasyon olduğunu gösterir.
+
+    # Çoklu bağlantı sorunu
+
+```{r}
+suppressMessages(library(corrplot))
+
+korelasyon<-cor(data[, c("age", "trtbps", "chol_log", "thalachh", "oldpeak")])
+library(matlib)
+invkor<-inv(korelasyon)# korelasyon matrisinin tersi (VIF)
+colnames(invkor)<-rownames(invkor)<-colnames(korelasyon)
+invkor
+```
+
+-   VIF değeri:
+
+    -   1'e yakınsa, çoklu bağlantı sorunu yoktur.
+
+    -   1 ile 5 arasındaysa, orta düzeyde çoklu bağlantı olabilir.
+
+    -   5'ten büyükse, yüksek düzeyde çoklu bağlantı sorunu olabilir.
+
+-   Bu çıktıdaki değerlere göre, tüm değişkenler için VIF değerleri 5'in altında görünüyor, bu da bu veri setindeki seçilen değişkenler arasında ciddi bir çoklu bağlantı sorunu olmadığını gösterebilir.
+
+    # Model
+
+```{r}
+#Logistic Regresyon 
+model_heart <- glm(output ~thalachh+chol_log+oldpeak+sex+age+trtbps+thall+caa_log+slp+exng+restecg+fbs+cp_log, family = "binomial", data = data)
+summary(model_heart)
+```
+
+-   Hipotez
+
+    **H0 (Null Hipotezi):** Bağımsız değişkenin kalp hastalığı riski üzerinde etkisi yoktur .
+
+    **H1 (Alternatif Hipotezi):** Bağımsız değişkenin kalp hastalığı riski üzerinde anlamlı bir etkisi vardır .
+
+-   **Anlamlı Değişkenler**: `thalachh`, `oldpeak`, `sex`, `thall`, `caa` ve `exng` modelde anlamlıdır. Bu değişkenler, hedef değişken olan kalp hastalığı riski üzerinde etkili olabilir.
+
+-   **Anlamlı Olmayan Değişkenler**: `age`, `chol`, `trtbps`, `slp`, `restecg` ve `fbs` ise modelde anlamlı bir etki yaratmamaktadır.
+
+    #### Model Denklemi:
+
+-   Logit(p) = 2.815718 + 0.028089 \* thalachh - 0.005273 \* chol - 0.406049 \* oldpeak - 1.497430 \* sex - 0.001940 \* age - 0.014158 \* trtbps - 0.864989 \* thall - 0.780831 \* caa + 0.476759 \* slp - 1.457320 \* exng + 0.368470 \* restecg + 0.372348 \* fbs
+
+```{r}
+##Hoshmer Lemeshov hesabi (p>0.05 ise model anlamlıdır. yani model veriye uyumludur.)
+suppressMessages(library(ResourceSelection))
+
+hoslem.test(model_heart$y,fitted(model_heart))
+```
+
+**Hipotez:**
+
+-   **H0 (Null Hipotezi):** Model veriye uyumlu değildir (p \< 0.05).
+
+-   **H1 (Alternatif Hipotezi):** Model veriye uyumludur (p \> 0.05).
+
+**Yorum:** p-değeri 0.919, bu da **p \> 0.05** olduğu için **H0 reddedilemez**. Yani, model veriye uyumludur.
+
+```{r}
+#Modelin R^2 degerlerinin hesabi 
+suppressMessages(library(DescTools))
+
+PseudoR2(model_heart, which = c("CoxSnell","Nagelkerke","McFadden"))
+```
+
+Nagelkerke R-kare değeri yaklaşık %69 civarındadır, bu da modelin bağımlı değişkendeki varyansın yaklaşık %69'unu açıkladığını gösterir. Bu sonuç, modelin veriyi oldukça iyi bir şekilde açıkladığını göstermektedir.
+
+```{r}
+# Tahminler (olasılık düzeyinde)
+tahminler <- predict(model_heart, type = "response")
+```
+
+```{r}
+# Tahminler
+sinif_tahminleri <- ifelse(tahminler > 0.5, 1, 0)
+# Confusion Matrix
+gercek_degerler <- data$output
+table(Gercek = gercek_degerler, Tahmin = sinif_tahminleri)
+```
+
+```{r}
+# Tahmin olasılıklarını görselleştirmek
+data$tahmin <- tahminler
+ggplot(data, aes(x = tahmin, fill = factor(output))) +
+  geom_histogram(bins = 30, alpha = 0.7, position = "identity") +
+  labs(title = "Tahmin Olasılıklarının Dağılımı", x = "Tahmin Olasılığı", y = "Frekans") +
+  theme_minimal()
+
+```
+
+-   **Doğru Negatifler (DN): 114**
+
+    -   Model, gerçek çıktısı 0 olan 114 vakayı doğru bir şekilde 0 olarak tahmin etmiştir.
+
+-   **Yanlış Pozitifler (YP): 24**
+
+    -   Model, gerçek çıktısı 0 olan 24 vakayı yanlışlıkla 1 olarak tahmin etmiştir. Bunlar Tip I Hataları olarak da bilinir.
+
+-   **Yanlış Negatifler (YN): 16**
+
+    -   Model, gerçek çıktısı 1 olan 16 vakayı yanlışlıkla 0 olarak tahmin etmiştir. Bunlar Tip II Hataları olarak da bilinir.
+
+-   **Doğru Pozitifler (DP): 149**
+
+    -   Model, gerçek çıktısı 1 olan 149 vakayı doğru bir şekilde 1 olarak tahmin etmiştir.
+
+-   Model, her iki sınıfı da (0 ve 1) genel olarak iyi tahmin ediyor.
+
+    -   1 çıktısını tahmin etmede biraz daha iyi (daha fazla Doğru Pozitif, daha az Yanlış Negatif).
+
+```{r}
+
+suppressMessages(library(sandwich))
+suppressMessages(library(aod))
+
+
+model_heart <- glm(output ~thalachh + chol_log + oldpeak + sex + age + trtbps + thall + 
+                   caa_log + slp + exng + restecg + fbs + cp_log, 
+                   family = "binomial", data = data)
+
+# Katsayılar ve varyans matrisi
+coef_model <- summary(model_heart)$coefficients[, 1]  # Katsayılar
+var_model <- vcov(model_heart)  # Varyans matrisi
+
+# Wald testi
+wald_test_result <- wald.test(b = coef_model, Sigma = var_model, Terms = 4:6)  # Örnek olarak 4:6 değişkenler
+print(wald_test_result)
+
+
+```
+
+**Hipotez:**
+
+-   **H0 :** Belirtilen değişkenlerin modelde anlamlı bir etkisi yoktur .
+
+-   **H1 :** Belirtilen değişkenlerin modelde anlamlı bir etkisi vardır.
+
+**Yorum:** p-değeri 0.00017, bu da **p \< 0.05** olduğu için **H0 reddedilir**. Bu, belirtilen değişkenlerin modelde anlamlı bir etkisi olduğunu gösterir.
+
+```{r}
+# Gerekli kütüphane
+suppressMessages(library(MASS))
+
+# Modelleri tanımlama
+mod1 <- glm(output ~ age + sex + cp_log, data = data, family = "binomial")
+mod2 <- glm(output ~ age + sex + cp_log + trtbps+caa_log, data = data, family = "binomial")
+mod3 <- glm(output ~ age + sex + cp_log + trtbps + chol_log+caa_log, data = data, family = "binomial")
+mod4 <- glm(output ~ age + sex + cp_log + trtbps + chol_log + fbs+caa_log, data = data, family = "binomial")
+mod5 <- glm(output ~ age + sex + cp_log + trtbps + chol_log + fbs + restecg+caa_log, data =data, family = "binomial")
+mod6 <- glm(output ~ age + sex + cp_log + trtbps + chol_log + fbs + restecg + thalachh+caa_log, data = data, family = "binomial")
+
+# Modellerin listesi
+models <- list(mod1, mod2, mod3, mod4, mod5, mod6)
+
+# Tablo oluşturma
+comparison_table <- data.frame(
+  Model = paste0("mod", 1:6),
+  Df.fit = sapply(models, function(mod) length(coef(mod))),
+  Num.obs = nobs(models[[1]]),
+  BIC = sapply(models, BIC)
+)
+
+# BIC farklarını ekleme
+comparison_table$BIC.diff <- comparison_table$BIC - min(comparison_table$BIC)
+
+# Sonuçları yazdırma
+print(comparison_table)
+```
+
+-   **Genel Durum:**
+
+    -   **BIC değeri** model seçimi için temel kriterdir. Daha düşük bir BIC değeri, modelin hem iyi bir uyum sağladığını hem de gereksiz karmaşıklıktan kaçındığını gösterir.
+
+    -   Bu tabloda **mod2** en düşük BIC değerine (287.3897) sahiptir ancak model başarısına bakılarak **mod6** tercih edilmiştir çünkü mod2 daha iyi sonuç vermektedir.
+
+-   **Model Karmaşıklığı (Df.fit):**
+
+    -   Serbestlik derecesi (Df.fit) arttıkça model karmaşıklığı artar. Modeller arasındaki Df.fit artışı, daha fazla değişkenin modele dahil edildiğini gösterir.
+
+    -   Ancak, daha karmaşık bir model her zaman daha iyi bir model anlamına gelmez; bu nedenle BIC değeri bu dengeyi sağlamak için önemlidir.
+
+-   **BIC.diff:**
+
+    -   **mod6** için BIC.diff = 0.2519 olarak gösteriliyor. Bu, mod6'nın diğer modellerle karşılaştırıldığında (mod 2 dışında) en iyi uyumu ve en düşük karmaşıklığı sağladığını gösterir.
+
+    -   Diğer modellerin BIC.diff değerleri arttıkça, bu modellerin mod2'ya göre daha az tercih edilir hale geldiğini görebiliriz.
+
+```{r}
+summary(mod6)
+```
+
+-   **H0 (Null Hipotezi):** İlgili değişkenin modelde bağımlı değişken (output) üzerinde anlamlı bir etkisi yoktur.
+
+-   **H1 (Alternatif Hipotez):** İlgili değişkenin modelde bağımlı değişken (output) üzerinde anlamlı bir etkisi vardır.
+
+    ### Anlamlı Değişkenler:
+
+    -   **sex** (p = 3.10e-06 \< 0.05)
+
+    -   **cp_log** (p = 9.25e-10\< 0.05)
+
+    -   **trtbps** (p = 0.00388\< 0.05)
+
+    -   **thalachh** (p = 3.94e-05\< 0.05)
+
+    -   **caa_log** (p = 3.97e-08\< 0.05)
+
+    ### Anlamlı Olmayan Değişkenler:
+
+    -   **(Intercept)** (p = 0.14452 \> 0.05)
+
+    -   **age** (p = 0.57034\> 0.05)
+
+    -   **chol_log** (p = 0.07312\> 0.05)
+
+    -   **fbs** (p = 0.77632\> 0.05)
+
+    -   **restecg** (p = 0.38239\> 0.05)
+
+```{r}
+suppressMessages(library(pROC))
+
+cat("Model 2 AUC: ", auc(roc(data$output, predict(mod2, type = "response"))), "\n")
+cat("Model 6 AUC: ", auc(roc(data$output, predict(mod6, type = "response"))), "\n")
+
+```
+
+```{r}
+suppressMessages(library(pROC))
+
+# Modelden tahminler
+predictions <- predict(mod6, type = "response")
+
+roc_curve <- roc(data$output, predictions)
+# ROC eğrisi
+plot(roc_curve, main = "ROC Eğrisi", col = "blue", lwd = 2)
+# AUC değeri
+auc(roc_curve)
+```
+
+-   **Yüksek Sensitivity:** ROC eğrisinin sol üst köşeye yakın olması, modelin duyarlılığını (gerçek pozitifleri doğru şekilde yakalama oranını) yüksek tuttuğunu gösterir. Bu, modelin hastaları doğru şekilde tespit etme konusunda başarılı olduğunu ifade eder.
+
+-   **Yüksek Specificity:** Eğri aynı zamanda yanlış pozitif oranının (1-specificity) düşük olduğunu gösteriyorsa, modeliniz gerçek negatifleri (sağlıklı kişileri) de doğru şekilde tespit ediyor demektir. Bu, modelin sağlıklı kişileri yanlışlıkla hastaya dönüştürme oranının düşük olduğunu gösterir ve modelin yüksek özgüllük gösterdiğini ifade eder.
+
+ROC eğrisinin şekli ve konumu, modelinizin oldukça başarılı olduğunu ve hem duyarlılığı hem de özgüllüğü yüksek seviyede tuttuğunu gösteriyor.
+
+```{r}
+suppressMessages(library(pROC))
+
+# AUC değeri
+auc(roc_curve)
+```
+
+-   Modelin başarısını değerlendirmek için ROC eğrisinin altındaki alan (AUC) hesaplandı ve 0.9081 bulundu. Bu değer, modelin %90,8 doğrulukla pozitif sınıfları doğru bir şekilde ayırt edebildiğini göstermektedir.
+
+```{r}
+
+
+# Odds ratio ve güven aralıkları
+odds_ratios <- exp(coef(mod6))
+conf_intervals <- exp(confint(mod6))
+
+# Sonuçları bir tablo olarak görüntüleme
+results <- data.frame(
+  Variable = names(coef(mod6)),
+  Coefficient = coef(mod6),
+  OddsRatio = odds_ratios,
+  LowerCI = conf_intervals[, 1],
+  UpperCI = conf_intervals[, 2],
+  PValue = summary(mod6)$coefficients[, 4]
+)
+print(results)
+```
+
+### **Değişkenlere Göre Yorumlar:**
+
+1.  **Age (Yaş):**
+
+    -   OR: 1.012 (Risk artırıcı, ama etkisi çok düşük).
+
+    -   P-Value: 0.57 (İstatistiksel olarak anlamlı değil).
+
+    -   **Yorum:** Yaş değişkeninin bağımlı değişken üzerindeki etkisi istatistiksel olarak anlamlı bulunmamış.
+
+2.  **Sex (Cinsiyet):**
+
+    -   OR: 0.1438 (Risk azaltıcı).
+
+    -   P-Value: \< 0.001 ( anlamlı).
+
+    -   **Yorum:** Erkek/kadın değişkeni bağımlı değişken üzerinde güçlü bir risk azaltıcı etkisi var.
+
+3.  **cp_log (Göğüs Ağrısı Türü - Logaritmik):**
+
+    -   OR: 1.334 (Risk artırıcı).
+
+    -   P-Value: \< 0.001 (anlamlı).
+
+    -   **Yorum:** Göğüs ağrısı türü, bağımlı değişkeni artıran istatistiksel olarak anlamlı bir risk faktörü.
+
+4.  **trtbps (Kan Basıncı):**
+
+    -   OR: 0.971 (Risk azaltıcı).
+
+    -   P-Value: 0.003 (Anlamlı).
+
+    -   **Yorum:** Kan basıncı, bağımlı değişken üzerinde hafif bir azaltıcı etkiye sahip.
+
+5.  **chol_log (Kolesterol - Logaritmik):**
+
+    -   OR: 0.186 (Risk azaltıcı).
+
+    -   P-Value: 0.073 (anlamlı).
+
+    -   **Yorum:** Kolesterol düzeyleri bağımlı değişkeni azaltıyor, ancak istatistiksel anlamlılık sınırında.
+
+6.  **fbs (Açlık Kan Şekeri):**
+
+    -   OR: 1.143 (Risk artırıcı).
+
+    -   P-Value: 0.77 (Anlamlı değil).
+
+    -   **Yorum:** Açlık kan şekeri bağımlı değişken üzerinde istatistiksel olarak anlamlı değil.
+
+7.  **restecg (EKG Sonuçları):**
+
+    -   OR: 1.326 (Risk artırıcı).
+
+    -   P-Value: \< 0.001 ( anlamlı).
+
+    -   **Yorum:** EKG sonuçları bağımlı değişken üzerinde anlamlı bir risk artırıcı etkiye sahip.
+
+8.  **thalachh (Maksimum Kalp Hızı):**
+
+    -   OR: 1.040 (Risk artırıcı).
+
+    -   P-Value: \< 0.001 (anlamlı).
+
+    -   **Yorum:** Maksimum kalp hızı bağımlı değişken üzerinde istatistiksel olarak anlamlı bir risk artırıcı etkiye sahip.
+
+9.  **caa_log (Koroner Arter Sayısı - Logaritmik):**
+
+    -   OR: 0.763 (Risk azaltıcı).
+
+    -   P-Value: \< 0.001 ( anlamlı).
+
+    -   **Yorum:** Koroner arter sayısı, bağımlı değişken üzerinde anlamlı şekilde risk azaltıcı bir etkiye sahip.
+
+### **Genel Risk Analizi**
+
+-   **Anlamlı değişkenler**:
+
+    -   **sex**: Kadınlar erkeklere göre %85.6 daha düşük riske sahiptir (odds oranı 0.1439).
+
+    -   **cp_log**: Göğüs ağrısı türü riski %33.4 artırır (odds oranı 1.3344).
+
+    -   **trtbps**: Kan basıncı arttıkça risk %2.8 azalır (odds oranı 0.9717).
+
+    -   **thalachh**: Maksimum kalp hızı arttıkça risk %4.0 artar (odds oranı 1.0402).
+
+    -   **caa_log**: Koroner arter hastalığı arttıkça risk %23.7 azalır (odds oranı 0.7631).
+
+    -   **restecg**: Elektrokardiyogram sonucu risk %32.7 artar (odds oranı 1.3268).
+
+-   **Anlamlı olmayan değişkenler**:
+
+    -   **age**: Yaş arttıkça risk %1.3 artar (odds oranı 1.0126), ancak anlamlı değil.
+
+    -   **chol_log**: Kolesterol arttıkça risk %81.3 azalır (odds oranı 0.1868), ancak anlamlı değil.
+
+    -   **fbs**: Açlık kan şekeri arttıkça risk %14.3 artar (odds oranı 1.1433), ancak anlamlı değil.
