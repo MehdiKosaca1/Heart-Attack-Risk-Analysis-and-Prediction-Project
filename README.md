@@ -8,4 +8,5 @@ Comprehensive data exploration and visualization.
 Transformation of key variables to enhance model performance.
 Evaluation of multicollinearity and variable significance.
 
+![image](https://github.com/user-attachments/assets/a76ced6c-9b3e-408e-b7d9-34f1cf187fd7)
 
