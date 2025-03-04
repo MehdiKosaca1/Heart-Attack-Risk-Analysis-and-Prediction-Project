@@ -417,7 +417,7 @@ summary(model_heart)
 
 -   **Anlamlı Olmayan Değişkenler**: `age`, `chol`, `trtbps`, `slp`, `restecg` ve `fbs` ise modelde anlamlı bir etki yaratmamaktadır.
 
-    #### Model Denklemi:
+    #### Model Denklemi
 
 -   Logit(p) = 2.815718 + 0.028089 \* thalachh - 0.005273 \* chol - 0.406049 \* oldpeak - 1.497430 \* sex - 0.001940 \* age - 0.014158 \* trtbps - 0.864989 \* thall - 0.780831 \* caa + 0.476759 \* slp - 1.457320 \* exng + 0.368470 \* restecg + 0.372348 \* fbs
 
