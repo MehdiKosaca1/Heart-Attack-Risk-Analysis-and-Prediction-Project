@@ -1,5 +1,5 @@
 ---
-title: "Kalp Krizi Risk Analizi"
+title: " Kalp Krizi Risk Analizi "
 author: 
   - Mehdi Koşaca
 output:
